@@ -179,44 +179,44 @@ class DDMDetector(BaseDriftDetector):
     
     def __init__(
         self,
-        min_num_instances: int = 30,
-        warning_level: float = 2.0,
-        out_control_level: float = 3.0,
+        warm_start: int = 30,
+        warning_threshold: float = 2.0,
+        drift_threshold: float = 3.0,
         **kwargs
     ):
         """
         Initialize DDM detector.
         
         Args:
-            min_num_instances: Minimum instances before detection
-            warning_level: Warning threshold
-            out_control_level: Drift detection threshold
+            warm_start: The minimum required number of analyzed samples so change can be detected. Warm start parameter for the drift detector.
+            warning_threshold: Threshold to decide if the detector is in a warning zone. The default value gives 95% of confidence level to the warning assessment.
+            drift_threshold: Threshold to decide if a drift was detected. The default value gives a 99\% of confidence level to the drift assessment.
         """
         self.params = {
-            'min_num_instances': min_num_instances,
-            'warning_level': warning_level,
-            'out_control_level': out_control_level
+            'warm_start': warm_start,
+            'warning_threshold': warning_threshold,
+            'drift_threshold': drift_threshold
         }
         super().__init__(**self.params)
         
     def _create_detector(self, **kwargs):
         """Create DDM detector instance.""" 
-        return drift.DDM(**kwargs)
+        return drift.binary.DDM(**kwargs)
         
     def get_parameter_ranges(self) -> Dict[str, Dict[str, Any]]:
         """Get DDM parameter search ranges."""
         return {
-            'min_num_instances': {
+            'warm_start': {
                 'type': 'choice',
                 'values': [20, 30, 40, 50, 60],
                 'priority': 'medium'
             },
-            'warning_level': {
+            'warning_threshold': {
                 'type': 'uniform',
                 'range': [1.5, 2.5],
                 'priority': 'high'
             },
-            'out_control_level': {
+            'drift_threshold': {
                 'type': 'uniform',
                 'range': [2.5, 3.5],
                 'priority': 'high'
@@ -231,44 +231,44 @@ class EDDMDetector(BaseDriftDetector):
     
     def __init__(
         self,
-        min_num_instances: int = 30,
-        warning_level: float = 0.95,
-        out_control_level: float = 0.9,
+        warm_start: int = 30,
+        alpha: float = 0.95,
+        beta: float = 0.9,
         **kwargs
     ):
         """
         Initialize EDDM detector.
         
         Args:
-            min_num_instances: Minimum instances before detection
-            warning_level: Warning threshold
-            out_control_level: Drift detection threshold
+            warm_start: The minimum required number of monitored errors/failures so change can be detected. Warm start parameter for the drift detector.
+            alpha: Threshold for triggering a warning. Must be between 0 and 1. The smaller the value, the more conservative the detector becomes.
+            beta: Threshold for triggering a drift. Must be between 0 and 1. The smaller the value, the more conservative the detector becomes.
         """
         self.params = {
-            'min_num_instances': min_num_instances,
-            'warning_level': warning_level,
-            'out_control_level': out_control_level
+            'warm_start': warm_start,
+            'alpha': alpha,
+            'beta': beta
         }
         super().__init__(**self.params)
         
     def _create_detector(self, **kwargs):
         """Create EDDM detector instance."""
-        return drift.EDDM(**kwargs)
+        return drift.binary.EDDM(**kwargs)
         
     def get_parameter_ranges(self) -> Dict[str, Dict[str, Any]]:
         """Get EDDM parameter search ranges."""
         return {
-            'min_num_instances': {
+            'warm_start': {
                 'type': 'choice',
                 'values': [20, 30, 40, 50, 60],
                 'priority': 'medium'  
             },
-            'warning_level': {
+            'alpha': {
                 'type': 'uniform',
                 'range': [0.9, 0.99],
                 'priority': 'high'
             },
-            'out_control_level': {
+            'beta': {
                 'type': 'uniform',
                 'range': [0.85, 0.95],
                 'priority': 'high'
