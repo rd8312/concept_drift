@@ -56,7 +56,7 @@ python -m src.cli tune --trials 50 --runs 3 --output quick_results
 # 指定檢測器和數據集
 python -m src.cli tune \
   --algo adwin,kswin,page_hinkley \
-  --datasets sea,sine,friedman \
+  --datasets sea,sine,friedman,elec2 \
   --trials 300 \
   --runs 5 \
   --output advanced_results
@@ -74,6 +74,13 @@ python -m src.cli tune \
   --delay-penalty 0.001 \
   --tolerance 30 \
   --output critical_systems
+
+# 專門測試真實世界數據集 Elec2
+python -m src.cli tune \
+  --datasets elec2 \
+  --trials 200 \
+  --runs 3 \
+  --output elec2_results
 ```
 
 ### 實驗輸出結構
@@ -527,6 +534,13 @@ python -m src.cli test \
   --dataset friedman \
   --params '{"window_size": 100, "stat_size": 30, "alpha": 0.005}' \
   --verbose
+
+# 測試真實世界Elec2數據集
+python -m src.cli test \
+  --detector adwin \
+  --dataset elec2 \
+  --params '{"delta": 0.002}' \
+  --verbose
 ```
 
 ## 📈 進階視覺化分析
@@ -718,10 +732,14 @@ python -m src.cli list --detectors
 python -m src.cli list --datasets
 ```
 
+### 🎲 合成數據集
 - **SEA**：突然概念變化生成器
 - **Sine**：正弦波與概念漂移流組合
 - **Friedman**：多種漂移類型的Friedman數據
 - **Concept Drift**：靈活的概念漂移流合成器
+
+### 🌍 真實世界數據集
+- **Elec2**：澳洲NSW電力市場數據（45,312樣本），包含真實的市場概念漂移
 
 ## 🔍 疑難排解
 
@@ -789,6 +807,9 @@ python -m src.cli recommend \
 
 # 測試單一配置
 python -m src.cli test --detector adwin --dataset sea --verbose
+
+# 測試真實世界數據
+python -m src.cli test --detector adwin --dataset elec2 --verbose
 ```
 
 🎯 **一鍵實驗 → 自動優化 → 生成模板 → 直接部署**

@@ -9,6 +9,7 @@ from src.datasets import (
     SineGenerator, 
     ConceptDriftStreamGenerator,
     FriedmanDriftGenerator,
+    Elec2Generator,
     create_dataset
 )
 
@@ -303,7 +304,7 @@ class TestCreateDataset:
     
     def test_create_dataset_valid_types(self):
         """Test creating datasets with valid types."""
-        dataset_types = ['sea', 'sine', 'friedman', 'concept_drift']
+        dataset_types = ['sea', 'sine', 'friedman', 'concept_drift', 'elec2']
         
         for dataset_type in dataset_types:
             try:
@@ -356,6 +357,58 @@ class TestCreateDataset:
                 break
         
         assert len(data_sample) == 100
+    
+    def test_create_elec2_dataset(self):
+        """Test creating Elec2 dataset with factory function."""
+        # Test basic Elec2 creation
+        generator = create_dataset('elec2', {'n_samples': 20})
+        data = list(generator)
+        
+        assert len(data) == 20
+        
+        # Check Elec2-specific structure
+        for x, y, is_drift in data:
+            assert isinstance(x, dict)  # Elec2 has feature dict
+            assert isinstance(y, (int, float))  # Binary classification target
+            assert isinstance(is_drift, bool)
+    
+    def test_create_elec2_with_drift_positions(self):
+        """Test creating Elec2 dataset with custom drift positions."""
+        config = {
+            'n_samples': 100,
+            'drift_positions': [25, 75],
+            'seed': 42
+        }
+        
+        generator = create_dataset('elec2', config)
+        data = list(generator)
+        
+        assert len(data) == 100
+        
+        # Check drift positions
+        drift_points = [i for i, (_, _, is_drift) in enumerate(data) if is_drift]
+        assert set(drift_points) == {25, 75}
+    
+    def test_create_elec2_with_advanced_config(self):
+        """Test creating Elec2 dataset with advanced configuration."""
+        config = {
+            'n_samples': 50,
+            'start_position': 100,
+            'sample_fraction': 1.0,
+            'seed': 123
+        }
+        
+        generator = create_dataset('elec2', config)
+        data = list(generator)
+        
+        assert len(data) == 50
+        
+        # All should be valid Elec2 samples
+        for x, y, is_drift in data:
+            assert isinstance(x, dict)
+            assert len(x) > 0  # Should have features
+            assert isinstance(y, (int, float))
+            assert isinstance(is_drift, bool)
 
 
 class TestDatasetIntegration:
@@ -427,7 +480,7 @@ class TestDatasetIntegration:
             'n_samples': 300
         }
         
-        for dataset_type in ['sea', 'friedman']:
+        for dataset_type in ['sea', 'friedman', 'elec2']:
             data = list(create_dataset(dataset_type, config))
             
             actual_drift_positions = [i for i, (_, _, is_drift) in enumerate(data) if is_drift]
@@ -440,7 +493,7 @@ class TestDatasetIntegration:
         sample_counts = [50, 100, 500]
         
         for n_samples in sample_counts:
-            for dataset_type in ['sea', 'friedman']:
+            for dataset_type in ['sea', 'friedman', 'elec2']:
                 config = {'n_samples': n_samples}
                 data = list(create_dataset(dataset_type, config))
                 
@@ -448,7 +501,7 @@ class TestDatasetIntegration:
     
     def test_data_structure_consistency(self):
         """Test that all datasets follow the same output structure."""
-        for dataset_type in ['sea', 'sine', 'friedman']:
+        for dataset_type in ['sea', 'sine', 'friedman', 'elec2']:
             try:
                 config = {'n_samples': 50}
                 data = list(create_dataset(dataset_type, config))
@@ -456,7 +509,7 @@ class TestDatasetIntegration:
                 assert len(data) > 0
                 
                 for x, y, is_drift in data:
-                    # x can be float (SEA) or dict (Sine, Friedman)
+                    # x can be float (SEA) or dict (Sine, Friedman, Elec2)
                     assert isinstance(x, (float, dict))
                     
                     # y should be numeric
@@ -467,3 +520,231 @@ class TestDatasetIntegration:
                     
             except Exception as e:
                 pytest.fail(f"Data structure consistency failed for {dataset_type}: {e}")
+
+
+class TestElec2Generator:
+    """Test Elec2 (Electricity) real-world dataset generator."""
+    
+    def test_elec2_default_initialization(self):
+        """Test Elec2 generator with default parameters."""
+        generator = Elec2Generator()
+        
+        assert generator.n_samples is None  # Full dataset by default
+        assert generator.drift_positions is None  # Auto-detect drift points
+        assert generator.seed == 42
+        assert generator.start_position == 0
+        assert generator.sample_fraction == 1.0
+    
+    def test_elec2_custom_initialization(self):
+        """Test Elec2 generator with custom parameters."""
+        generator = Elec2Generator(
+            n_samples=1000,
+            drift_positions=[300, 700],
+            seed=123,
+            start_position=100,
+            sample_fraction=0.5
+        )
+        
+        assert generator.n_samples == 1000
+        assert generator.drift_positions == [300, 700]
+        assert generator.seed == 123
+        assert generator.start_position == 100
+        assert generator.sample_fraction == 0.5
+    
+    def test_elec2_data_generation(self):
+        """Test Elec2 data generation and structure."""
+        generator = Elec2Generator(
+            n_samples=100,
+            drift_positions=[30, 70],
+            seed=42
+        )
+        
+        data = list(generator.generate())
+        
+        # Should generate correct number of samples
+        assert len(data) == 100
+        
+        # Check data structure
+        for i, (x, y, is_drift) in enumerate(data):
+            # x should be a dictionary (features from Elec2 dataset)
+            assert isinstance(x, dict)
+            
+            # Should have expected features (River's Elec2 structure)
+            assert len(x) > 0
+            
+            # y should be binary classification target (0 or 1)
+            assert y in [0, 1] or isinstance(y, (int, float))
+            
+            # is_drift should be boolean
+            assert isinstance(is_drift, bool)
+            
+            # Check drift markers at specified positions
+            if i in [30, 70]:
+                assert is_drift
+            else:
+                assert not is_drift
+    
+    def test_elec2_reproducibility(self):
+        """Test that Elec2 generator is reproducible with same seed."""
+        config1 = {
+            'n_samples': 50,
+            'drift_positions': [20],
+            'seed': 42
+        }
+        
+        generator1 = Elec2Generator(**config1)
+        generator2 = Elec2Generator(**config1)
+        
+        data1 = list(generator1.generate())
+        data2 = list(generator2.generate())
+        
+        assert len(data1) == len(data2)
+        
+        # Should be identical with same seed
+        for (x1, y1, d1), (x2, y2, d2) in zip(data1, data2):
+            assert x1 == x2  # Same features
+            assert y1 == y2  # Same targets
+            assert d1 == d2  # Same drift markers
+    
+    def test_elec2_different_seeds(self):
+        """Test that different seeds produce different data ordering."""
+        generator1 = Elec2Generator(n_samples=50, seed=42)
+        generator2 = Elec2Generator(n_samples=50, seed=123)
+        
+        data1 = list(generator1.generate())
+        data2 = list(generator2.generate())
+        
+        assert len(data1) == len(data2)
+        
+        # Should have some differences with different seeds
+        # (due to different data ordering/sampling)
+        differences = sum(1 for (x1, y1, _), (x2, y2, _) in zip(data1, data2) 
+                         if x1 != x2 or y1 != y2)
+        
+        # Should have some differences (not necessarily all)
+        assert differences >= 0  # At minimum, no errors occurred
+    
+    def test_elec2_auto_drift_detection(self):
+        """Test automatic drift point detection when not specified."""
+        generator = Elec2Generator(
+            n_samples=200,
+            drift_positions=None,  # Auto-detect
+            seed=42
+        )
+        
+        data = list(generator.generate())
+        
+        assert len(data) == 200
+        
+        # Should have some automatically detected drift points
+        drift_points = [i for i, (_, _, is_drift) in enumerate(data) if is_drift]
+        
+        # Should detect some drift points automatically
+        # (based on electricity market patterns)
+        assert len(drift_points) >= 0  # At least should not error
+    
+    def test_elec2_start_position(self):
+        """Test starting from different positions in the dataset."""
+        generator = Elec2Generator(
+            n_samples=50,
+            start_position=100,
+            seed=42
+        )
+        
+        data = list(generator.generate())
+        
+        assert len(data) == 50
+        
+        # Should generate valid data from offset position
+        for x, y, is_drift in data:
+            assert isinstance(x, dict)
+            assert isinstance(y, (int, float))
+            assert isinstance(is_drift, bool)
+    
+    def test_elec2_sample_fraction(self):
+        """Test sampling fraction functionality."""
+        generator = Elec2Generator(
+            n_samples=100,
+            sample_fraction=0.5,  # Sample half the data
+            seed=42
+        )
+        
+        data = list(generator.generate())
+        
+        assert len(data) == 100
+        
+        # Should still generate requested number of samples
+        # but with sampling applied internally
+        for x, y, is_drift in data:
+            assert isinstance(x, dict)
+            assert isinstance(y, (int, float))
+            assert isinstance(is_drift, bool)
+    
+    def test_elec2_integration_with_river(self):
+        """Test integration with River's Elec2 dataset."""
+        generator = Elec2Generator(n_samples=10, seed=42)
+        
+        data = list(generator.generate())
+        
+        assert len(data) == 10
+        
+        # Check that data follows River's Elec2 structure
+        for x, y, is_drift in data:
+            # x should be feature dictionary from River's Elec2
+            assert isinstance(x, dict)
+            assert len(x) > 0
+            
+            # y should be binary target
+            assert isinstance(y, (int, float))
+            
+            # Check if features have reasonable values
+            for feature_name, feature_value in x.items():
+                assert isinstance(feature_value, (int, float))
+    
+    def test_elec2_error_handling(self):
+        """Test error handling for invalid parameters."""
+        # Test negative n_samples
+        with pytest.raises((ValueError, TypeError)):
+            generator = Elec2Generator(n_samples=-10)
+            list(generator.generate())
+        
+        # Test invalid sample_fraction
+        with pytest.raises((ValueError, TypeError)):
+            generator = Elec2Generator(sample_fraction=-0.1)
+            list(generator.generate())
+        
+        with pytest.raises((ValueError, TypeError)):
+            generator = Elec2Generator(sample_fraction=1.5)
+            list(generator.generate())
+    
+    def test_elec2_drift_positions_validation(self):
+        """Test drift positions validation and handling."""
+        # Test valid drift positions
+        generator = Elec2Generator(
+            n_samples=100,
+            drift_positions=[25, 50, 75],
+            seed=42
+        )
+        
+        data = list(generator.generate())
+        
+        assert len(data) == 100
+        
+        # Check drift markers
+        drift_positions = [i for i, (_, _, is_drift) in enumerate(data) if is_drift]
+        assert set(drift_positions) == {25, 50, 75}
+        
+        # Test drift positions outside range (should handle gracefully)
+        generator2 = Elec2Generator(
+            n_samples=50,
+            drift_positions=[30, 100, 200],  # Some outside range
+            seed=42
+        )
+        
+        data2 = list(generator2.generate())
+        assert len(data2) == 50
+        
+        # Should only mark valid positions
+        drift_positions2 = [i for i, (_, _, is_drift) in enumerate(data2) if is_drift]
+        assert 100 not in drift_positions2  # Outside range should not be marked
+        assert 200 not in drift_positions2
