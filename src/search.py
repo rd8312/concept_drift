@@ -360,11 +360,18 @@ class HybridSearch:
                     print(f"  Evaluating {i+1}/{len(param_sets)}...")
                     
                 try:
-                    score = objective_function(params)
+                    result_data = objective_function(params)
+                    if isinstance(result_data, tuple):
+                        score, metrics = result_data
+                    else:
+                        # Backward compatibility: if function returns only score
+                        score = result_data
+                        metrics = None
+                        
                     result = SearchResult(
                         parameters=params,
                         score=score,
-                        metrics=None,  # Will be filled by objective function if needed
+                        metrics=metrics,
                         detector_type=detector_type
                     )
                     results.append(result)
@@ -484,7 +491,7 @@ def create_objective_function(
     detector_type: str,
     data_stream: List[Tuple[Any, Any, bool]],
     evaluator: DriftEvaluator = None
-) -> Callable[[Dict[str, Any]], float]:
+) -> Callable[[Dict[str, Any]], Tuple[float, Optional[DriftMetrics]]]:
     """
     Create objective function for hyperparameter optimization.
     
@@ -494,12 +501,12 @@ def create_objective_function(
         evaluator: Drift evaluator (uses default if None)
         
     Returns:
-        Objective function that takes parameters and returns score
+        Objective function that takes parameters and returns (score, metrics)
     """
     if evaluator is None:
         evaluator = DriftEvaluator()
     
-    def objective(params: Dict[str, Any]) -> float:
+    def objective(params: Dict[str, Any]) -> Tuple[float, Optional[DriftMetrics]]:
         """Objective function to maximize."""
         try:
             # Create detector with given parameters
@@ -522,10 +529,10 @@ def create_objective_function(
                 len(data_stream)
             )
             
-            return metrics.composite_score
+            return metrics.composite_score, metrics
             
         except Exception as e:
             # Return poor score for invalid parameters
-            return -1.0
+            return -1.0, None
     
     return objective

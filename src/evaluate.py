@@ -1028,6 +1028,8 @@ def run_comprehensive_evaluation(
         if search_results:
             best_detector_configs[detector_name] = search_results[0].parameters
         else:
+            # Use default parameters if no optimization results
+            # This ensures all detectors have valid parameters
             best_detector_configs[detector_name] = {}
     
     # Phase 2: Comprehensive Benchmarking

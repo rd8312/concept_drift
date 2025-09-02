@@ -42,17 +42,34 @@ class BaseDriftDetector(ABC):
         """Get valid parameter ranges for hyperparameter search."""
         pass
         
-    def update(self, x: Union[float, int]) -> 'BaseDriftDetector':
+    def update(self, x: Union[float, int, Dict[str, float]]) -> 'BaseDriftDetector':
         """
         Update detector with new sample.
         
         Args:
-            x: New sample value
+            x: New sample value (float, int, or dict of features)
             
         Returns:
             Self for method chaining
         """
-        self.detector.update(x)
+        # Handle different input formats
+        if isinstance(x, dict):
+            # For feature dictionaries, extract a single value for drift detection
+            # Use the first feature value or compute a summary statistic
+            if x:
+                # Use the first feature value as the primary signal
+                feature_values = list(x.values())
+                if feature_values:
+                    # Use mean of all features as a single drift signal
+                    x_value = np.mean(feature_values)
+                else:
+                    x_value = 0.0
+            else:
+                x_value = 0.0
+        else:
+            x_value = x
+            
+        self.detector.update(x_value)
         self.state.sample_count += 1
         
         # Update state
@@ -190,7 +207,7 @@ class DDMDetector(BaseDriftDetector):
         Args:
             warm_start: The minimum required number of analyzed samples so change can be detected. Warm start parameter for the drift detector.
             warning_threshold: Threshold to decide if the detector is in a warning zone. The default value gives 95% of confidence level to the warning assessment.
-            drift_threshold: Threshold to decide if a drift was detected. The default value gives a 99\% of confidence level to the drift assessment.
+            drift_threshold: Threshold to decide if a drift was detected. The default value gives a 99% of confidence level to the drift assessment.
         """
         self.params = {
             'warm_start': warm_start,

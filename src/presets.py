@@ -234,11 +234,11 @@ class TemplateGenerator:
                     use_cases=criteria['use_cases'].copy(),
                     parameters=best_result.parameters.copy(),
                     expected_performance={
-                        'f1_score': best_result.metrics.f1_score,
-                        'precision': best_result.metrics.precision,
-                        'recall': best_result.metrics.recall,
-                        'mean_delay': best_result.metrics.mean_delay,
-                        'false_positive_rate': best_result.metrics.false_positive_rate,
+                        'f1_score': best_result.metrics.f1_score if best_result.metrics else 0.0,
+                        'precision': best_result.metrics.precision if best_result.metrics else 0.0,
+                        'recall': best_result.metrics.recall if best_result.metrics else 0.0,
+                        'mean_delay': best_result.metrics.mean_delay if best_result.metrics else 0.0,
+                        'false_positive_rate': best_result.metrics.false_positive_rate if best_result.metrics else 0.0,
                         'composite_score': best_result.score
                     },
                     confidence_score=self._calculate_confidence_score(best_result, template_name),
@@ -260,6 +260,9 @@ class TemplateGenerator:
             Confidence score between 0 and 1
         """
         metrics = result.metrics
+        if metrics is None:
+            return 0.0  # Cannot calculate confidence without metrics
+            
         base_score = metrics.f1_score * 0.6 + (1 - metrics.false_positive_rate) * 0.4
         
         # Type-specific bonuses
@@ -322,11 +325,11 @@ class TemplateGenerator:
             use_cases=criteria['use_cases'].copy(),
             parameters=best_solution.parameters.copy(),
             expected_performance={
-                'f1_score': best_solution.metrics.f1_score,
-                'precision': best_solution.metrics.precision,
-                'recall': best_solution.metrics.recall,
-                'mean_delay': best_solution.metrics.mean_delay,
-                'false_positive_rate': best_solution.metrics.false_positive_rate,
+                'f1_score': best_solution.metrics.f1_score if best_solution.metrics else 0.0,
+                'precision': best_solution.metrics.precision if best_solution.metrics else 0.0,
+                'recall': best_solution.metrics.recall if best_solution.metrics else 0.0,
+                'mean_delay': best_solution.metrics.mean_delay if best_solution.metrics else 0.0,
+                'false_positive_rate': best_solution.metrics.false_positive_rate if best_solution.metrics else 0.0,
                 'composite_score': best_solution.score
             },
             confidence_score=best_score,
@@ -352,6 +355,10 @@ class TemplateGenerator:
         """
         metrics = solution.metrics
         selection_criteria = criteria.get('selection_criteria', {})
+        
+        # Check if metrics are available
+        if metrics is None:
+            return 0.0  # Cannot score without metrics
         
         score = 0.0
         penalty = 0.0
@@ -626,6 +633,10 @@ def high_sensitivity(results: List[SearchResult], detector_name: str = "") -> Op
     candidates = []
     for result in results:
         metrics = result.metrics
+        # Skip results without metrics
+        if metrics is None:
+            continue
+            
         # High sensitivity: prioritize recall and F1, tolerate higher FP
         if (metrics.recall >= 0.75 and  # High recall requirement
             metrics.f1_score >= 0.70 and  # Good F1 score
@@ -677,6 +688,10 @@ def balanced(results: List[SearchResult], detector_name: str = "") -> Optional[S
     candidates = []
     for result in results:
         metrics = result.metrics
+        # Skip results without metrics
+        if metrics is None:
+            continue
+            
         # Balanced: good performance across all metrics
         if (metrics.f1_score >= 0.65 and          # Decent F1 score
             metrics.false_positive_rate <= 0.20 and  # Controlled FP rate
@@ -734,6 +749,10 @@ def high_stability(results: List[SearchResult], detector_name: str = "") -> Opti
     candidates = []
     for result in results:
         metrics = result.metrics
+        # Skip results without metrics
+        if metrics is None:
+            continue
+            
         # High stability: minimize FP, tolerate delay
         if (metrics.false_positive_rate <= 0.10 and  # Very low FP rate
             metrics.precision >= 0.75):              # High precision
