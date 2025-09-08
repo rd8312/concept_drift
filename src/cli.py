@@ -56,8 +56,8 @@ Examples:
     )
     tune_parser.add_argument(
         '--datasets',
-        default='sea,sine,friedman',
-        help='Datasets to use (comma-separated). Available: sea, sine, friedman, concept_drift'
+        default='sea,sine,friedman,elec2',
+        help='Datasets to use (comma-separated). Available: sea, sine, friedman, elec2'
     )
     tune_parser.add_argument(
         '--trials',
@@ -286,7 +286,8 @@ def run_tune_command(args) -> int:
         results = run_comprehensive_evaluation(
             output_dir=args.output,
             n_trials=args.trials,
-            verbose=True
+            verbose=True,
+            config=config
         )
         
         # Generate and export templates

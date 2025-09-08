@@ -997,7 +997,8 @@ class EvaluationFramework:
 def run_comprehensive_evaluation(
     output_dir: str = "results",
     n_trials: int = 200,
-    verbose: bool = True
+    verbose: bool = True,
+    config: EvaluationConfig = None
 ) -> Dict[str, Any]:
     """
     Run comprehensive evaluation including optimization and benchmarking.
@@ -1006,11 +1007,17 @@ def run_comprehensive_evaluation(
         output_dir: Output directory for results
         n_trials: Number of optimization trials per detector
         verbose: Whether to print progress
+        config: Evaluation configuration (if None, uses default config)
         
     Returns:
         Dictionary with all results and summary
     """
-    config = EvaluationConfig(output_dir=output_dir)
+    if config is None:
+        config = EvaluationConfig(output_dir=output_dir)
+    else:
+        # Update output directory if provided
+        config.output_dir = output_dir
+    
     framework = EvaluationFramework(config)
     
     print("=== Drift Detector Comprehensive Evaluation ===")
