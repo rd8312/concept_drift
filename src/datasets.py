@@ -5,7 +5,7 @@ using River's dataset API for streaming concept drift scenarios.
 """
 
 import numpy as np
-from typing import Iterator, Tuple, Optional, Dict, Any
+from typing import Iterator, Tuple, Optional, Dict, Any, List
 from river import datasets
 from river.datasets import synth
 
