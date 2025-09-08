@@ -6,19 +6,25 @@
 
 ## 🚀 核心功能
 
-### 1. 一鍵式實驗執行
+### 1. 智能統一介面 (NEW!)
+- **情境導向配置**：使用 `--scenario` 和 `--difficulty` 參數簡化設定
+- **智能數據集選擇**：自動根據情境選擇最適合的數據集和參數
+- **向下相容**：保持原有詳細配置選項的完整支援
+- **語義化命令**：`python -m src.cli tune --scenario abrupt_drift --difficulty hard`
+
+### 2. 一鍵式實驗執行  
 - **全自動化流程**：從數據集準備到結果分析的完整自動化
 - **多檢測器並行優化**：同時優化多種漂移檢測器
 - **智能參數搜索**：基於混合搜索算法的高效參數空間探索
 - **綜合性能評估**：多維度性能指標綜合評估
 
-### 2. 智能模板生成
+### 3. 智能模板生成
 - **Pareto最優解析**：基於Pareto前沿提取最優配置
 - **情境化模板**：針對不同應用場景自動生成專用模板
 - **性能預測**：每個模板包含預期性能指標
 - **置信度評分**：量化模板可靠性
 
-### 3. 實際部署整合
+### 4. 實際部署整合
 - **即插即用配置**：生成的模板可直接用於生產環境
 - **多種導出格式**：支援JSON、Python配置文件等格式
 - **推薦系統**：根據應用需求自動推薦最適合的模板
@@ -40,20 +46,54 @@ python -m src.cli list --detectors
 
 ## 🎯 一鍵跑實驗指南
 
+### 🌟 NEW: 智能情境模式 (推薦使用)
+
+使用新的情境導向介面，無需複雜參數配置：
+
+```bash
+# 目標情境：測試突變型概念漂移的高難度檢測
+python -m src.cli tune --scenario abrupt_drift --difficulty hard --trials 200
+
+# 目標情境：測試漸變型概念漂移的中等難度檢測  
+python -m src.cli tune --scenario gradual_drift --difficulty medium --stream-length 8000
+
+# 目標情境：使用真實世界數據進行簡單測試
+python -m src.cli tune --scenario real_world --difficulty easy
+
+# 目標情境：測試增量型概念漂移
+python -m src.cli tune --scenario incremental_drift --difficulty hard
+
+# 查看所有可用情境和說明
+python -m src.cli info --scenarios
+```
+
+### 📊 情境對應表
+
+| 情境 (Scenario) | 說明 | 推薦難度 | 適用數據集 |
+|---|---|---|---|
+| `abrupt_drift` | 突變型概念漂移 | medium, hard | SEA, Sine |
+| `gradual_drift` | 漸變型概念漂移 | easy, medium, hard | Friedman, ConceptDrift |
+| `incremental_drift` | 增量型概念漂移 | medium, hard | Friedman |
+| `real_world` | 真實世界數據 | easy, medium | Elec2 |
+| `general` | 通用混合測試 | easy, medium, hard | 自動選擇 |
+
 ### 快速開始：完整實驗流程
 
 ```bash
-# 基本實驗：使用所有檢測器和數據集
+# 智能模式：一行命令搞定 (推薦)
+python -m src.cli tune --scenario abrupt_drift --difficulty hard --trials 200
+
+# 傳統模式：使用所有檢測器和數據集 (仍然支援)
 python -m src.cli tune --trials 200 --runs 5
 
 # 快速測試：減少試驗次數
-python -m src.cli tune --trials 50 --runs 3 --output quick_results
+python -m src.cli tune --scenario general --difficulty easy --trials 50 --runs 3
 ```
 
 ### 進階配置：定制化實驗
 
 ```bash
-# 指定檢測器和數據集
+# 傳統詳細配置模式 (仍然支援)
 python -m src.cli tune \
   --algo adwin,kswin,page_hinkley \
   --datasets sea,sine,friedman,elec2 \
@@ -61,26 +101,26 @@ python -m src.cli tune \
   --runs 5 \
   --output advanced_results
 
-# 添加噪音測試
+# 情境模式 + 自訂參數
 python -m src.cli tune \
-  --trials 200 \
-  --noise "0.0,0.01,0.02,0.05,0.1" \
-  --tolerance 100 \
-  --output noise_robustness
-
-# 針對關鍵系統優化
-python -m src.cli tune \
+  --scenario gradual_drift \
+  --difficulty extreme \
+  --stream-length 10000 \
+  --drift-count 4 \
+  --noise-level high \
   --trials 400 \
-  --delay-penalty 0.001 \
-  --tolerance 30 \
-  --output critical_systems
+  --output extreme_gradual
+
+# 針對特定檢測器使用情境模式
+python -m src.cli tune \
+  --scenario abrupt_drift \
+  --difficulty hard \
+  --algo adwin,page_hinkley \
+  --trials 300 \
+  --output abrupt_specialized
 
 # 專門測試真實世界數據集 Elec2
-python -m src.cli tune \
-  --datasets elec2 \
-  --trials 200 \
-  --runs 3 \
-  --output elec2_results
+python -m src.cli tune --scenario real_world --difficulty medium --trials 200
 ```
 
 ### 實驗輸出結構
@@ -517,6 +557,38 @@ python -m src.cli tune \
 
 ## 🧪 單一配置測試
 
+### 🌟 NEW: 智能情境測試模式 (推薦)
+
+使用情境模式快速測試檢測器性能：
+
+```bash
+# 測試突變漂移情境下的ADWIN檢測器 (推薦)
+python -m src.cli test --scenario abrupt_drift --difficulty hard --detector adwin --verbose
+
+# 測試漸變漂移情境下的KSWIN檢測器
+python -m src.cli test --scenario gradual_drift --difficulty medium --detector kswin --verbose
+
+# 測試真實世界數據情境
+python -m src.cli test --scenario real_world --difficulty easy --detector adwin --verbose
+
+# 測試增量漂移情境 + 自訂噪音
+python -m src.cli test --scenario incremental_drift --difficulty hard --detector page_hinkley --noise 0.05 --verbose
+
+# 查看情境詳細資訊
+python -m src.cli info --scenario abrupt_drift
+```
+
+### 📊 情境測試對應表
+
+| 測試情境 | 檢測器建議 | 預期表現 | 適用場景 |
+|---|---|---|---|
+| `abrupt_drift + hard` | PageHinkley, ADWIN | 快速檢測 | 金融風控、安全監控 |
+| `gradual_drift + medium` | ADWIN, KSWIN | 平衡檢測 | 業務監控、A/B測試 |
+| `real_world + easy` | ADWIN | 穩定檢測 | 生產環境、基礎設施 |
+| `incremental_drift + hard` | Friedman-based | 趨勢檢測 | 長期監控、性能分析 |
+
+### 傳統詳細測試模式 (仍然支援)
+
 在部署前，建議先測試特定配置：
 
 ```bash
@@ -541,6 +613,30 @@ python -m src.cli test \
   --dataset elec2 \
   --params '{"delta": 0.002}' \
   --verbose
+```
+
+### 🔍 測試輸出範例
+
+```bash
+$ python -m src.cli test --scenario abrupt_drift --difficulty hard --detector adwin --verbose
+
+🧪 Testing detector: adwin
+🎯 Using scenario: abrupt_drift (difficulty: hard)
+🔄 Processing stream...
+   True drift at sample 1250
+   Drift detected at sample 1267
+   True drift at sample 2500
+   Drift detected at sample 2523
+
+📊 Test Results:
+   Samples processed: 5000
+   True drifts: 2 at positions [1250, 2500]
+   Detected drifts: 2 at positions [1267, 2523]
+   F1 Score: 0.8571
+   Precision: 1.0000
+   Recall: 1.0000
+   False Positive Rate: 0.0000
+   Mean Delay: 19.50 samples
 ```
 
 ## 📈 進階視覺化分析
@@ -813,3 +909,295 @@ python -m src.cli test --detector adwin --dataset elec2 --verbose
 ```
 
 🎯 **一鍵實驗 → 自動優化 → 生成模板 → 直接部署**
+
+## 📚 文檔預覽與發佈
+
+本專案使用 MkDocs 來生成和管理 API 文檔，提供清晰的模組說明和使用範例。
+
+### 本地預覽文檔
+
+#### 1. 安裝 MkDocs 和依賴
+
+```bash
+# 安裝 MkDocs 和 Material 主題
+pip install mkdocs mkdocs-material
+
+# 或者添加到 requirements.txt
+pip install -r requirements.txt  # (如果已包含 MkDocs 依賴)
+```
+
+#### 2. 本地預覽
+
+```bash
+# 啟動本地開發伺服器
+mkdocs serve
+
+# 或指定 host 和 port
+mkdocs serve --dev-addr localhost:8080
+```
+
+預覽地址：http://localhost:8000
+
+**功能特色**：
+- 🔄 **即時重載**：修改文檔後自動刷新瀏覽器
+- 🔍 **全文搜尋**：支援中英文搜尋功能  
+- 🎨 **Material 主題**：現代化的 UI 設計
+- 🌓 **明暗模式**：支援自動切換或手動切換
+- 📱 **響應式設計**：完美支援手機和平板閱讀
+
+#### 3. 建置靜態檔案
+
+```bash
+# 生成靜態網站檔案到 site/ 目錄
+mkdocs build
+
+# 建置並檢查連結
+mkdocs build --strict
+```
+
+### 發佈到 GitHub Pages
+
+#### 方法一：使用 MkDocs 一鍵部署
+
+```bash
+# 自動建置並推送到 gh-pages 分支
+mkdocs gh-deploy
+
+# 指定提交訊息
+mkdocs gh-deploy --message "Update documentation"
+
+# 首次部署時清理遠端分支
+mkdocs gh-deploy --clean
+```
+
+#### 方法二：GitHub Actions 自動化部署
+
+建立 `.github/workflows/docs.yml`：
+
+```yaml
+name: Build and Deploy Documentation
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        
+    - name: Install dependencies
+      run: |
+        pip install mkdocs mkdocs-material
+        
+    - name: Build documentation
+      run: mkdocs build --verbose --clean --strict
+      
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./site
+```
+
+#### 設定 GitHub Pages
+
+1. 前往 GitHub 專案的 **Settings** → **Pages**
+2. 在 **Source** 中選擇 **Deploy from a branch**
+3. 選擇 **gh-pages** 分支和 **/ (root)** 資料夾
+4. 點擊 **Save**
+
+文檔將發佈到：https://rd8312.github.io/concept_drift/
+
+### 文檔結構
+
+```
+docs/
+├── api/
+│   ├── index.md              # API 首頁
+│   ├── overview.md           # API 總覽
+│   └── modules/              # 模組文檔
+│       ├── cli.md           # 命令列介面
+│       ├── datasets.md      # 資料集模組
+│       ├── detectors.md     # 檢測器模組  
+│       ├── evaluate.md      # 評估框架
+│       ├── metrics.md       # 評估指標
+│       ├── presets.md       # 樣板生成
+│       └── search.md        # 超參數搜尋
+├── stylesheets/
+│   └── extra.css            # 自訂樣式
+└── javascripts/
+    └── mathjax.js           # 數學公式支援
+```
+
+### 文檔撰寫指南
+
+**Markdown 擴展功能**：
+- ✅ **代碼語法高亮**：支援 Python、JSON、YAML 等
+- ✅ **數學公式**：使用 MathJax 渲染 LaTeX 語法
+- ✅ **提示框**：`!!! note`, `!!! warning`, `!!! tip`
+- ✅ **表格**：增強的表格排版
+- ✅ **任務清單**：`- [x]` 格式的勾選清單
+
+**範例提示框語法**：
+```markdown
+!!! note "注意事項"
+    這是一個資訊提示框。
+
+!!! warning "警告"
+    這是一個警告提示框。
+
+!!! tip "小技巧"  
+    這是一個技巧提示框。
+```
+
+### 本地開發工作流程
+
+```bash
+# 1. 啟動文檔預覽
+mkdocs serve &
+
+# 2. 編輯文檔檔案
+# docs/api/modules/新模組.md
+
+# 3. 檢視即時預覽
+# 瀏覽器會自動重載變更
+
+# 4. 建置測試
+mkdocs build --strict
+
+# 5. 部署到 GitHub Pages
+mkdocs gh-deploy
+```
+
+## 🚀 NEW: API Reference - Smart Configuration
+
+### 情境導向API (推薦使用)
+
+```python
+# 一鍵創建實驗資料流
+from src.smart_config import create_experiment_stream
+
+# 突變漂移情境
+stream = create_experiment_stream(
+    scenario="abrupt_drift",
+    difficulty="hard", 
+    stream_length=5000,
+    drift_count=2,
+    seed=42
+)
+
+# 漸變漂移情境
+stream = create_experiment_stream(
+    scenario="gradual_drift",
+    difficulty="medium",
+    noise_level="high",
+    seed=42
+)
+
+# 真實世界情境
+stream = create_experiment_stream(
+    scenario="real_world",
+    difficulty="easy"
+)
+```
+
+### 情境資訊查詢
+
+```python
+from src.smart_config import get_scenario_info
+
+# 取得所有情境資訊
+all_scenarios = get_scenario_info()
+
+# 取得特定情境資訊
+abrupt_info = get_scenario_info("abrupt_drift")
+print(f"Description: {abrupt_info['description']}")
+print(f"Preferred datasets: {abrupt_info['preferred_datasets']}")
+```
+
+### 高級配置類別
+
+```python
+from src.smart_config import DataStreamConfig, SmartDatasetFactory
+from src.smart_config import Scenario, Difficulty, NoiseLevel
+
+# 詳細配置物件
+config = DataStreamConfig(
+    scenario=Scenario.GRADUAL_DRIFT,
+    difficulty=Difficulty.HARD,
+    stream_length=8000,
+    drift_count=3,
+    noise_level=NoiseLevel.MEDIUM,
+    custom_drift_positions=[2000, 4000, 6000],
+    seed=42
+)
+
+# 使用智慧工廠
+factory = SmartDatasetFactory()
+stream = factory.create_stream(config)
+```
+
+### 向下相容API
+
+傳統詳細配置方式仍然完全支援：
+
+```python
+from src.datasets import create_dataset
+
+# 傳統方式建立資料流
+stream = create_dataset('sea', {
+    'drift_positions': [1000, 2500],
+    'noise_level': 0.02,
+    'n_samples': 5000,
+    'seed': 42
+})
+```
+
+---
+
+## 📋 快速開始命令摘要
+
+### 🌟 NEW: 智能情境模式 (一鍵搞定)
+
+```bash
+# 完整實驗流程 - 智能模式 (推薦)
+python -m src.cli tune --scenario abrupt_drift --difficulty hard --trials 200
+
+# 查看所有情境資訊
+python -m src.cli info --scenarios
+
+# 情境測試
+python -m src.cli test --scenario gradual_drift --difficulty medium --detector adwin
+
+# 取得特定情境建議
+python -m src.cli info --scenario real_world
+```
+
+### 📊 傳統詳細模式 (進階使用)
+
+```bash
+# 完整實驗流程 - 傳統模式
+python -m src.cli tune --trials 200 --runs 5
+
+# 查看模板推薦
+python -m src.cli recommend \
+  --templates results/detector_templates.json \
+  --scenario production_monitoring
+
+# 傳統測試
+python -m src.cli test --detector adwin --dataset sea --verbose
+
+# 列出可用資源
+python -m src.cli list --detectors
+```
+
+🎯 **智能統一介面：一行命令 → 自動優化 → 生成模板 → 直接部署**

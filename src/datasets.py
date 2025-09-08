@@ -1,6 +1,6 @@
 """
 Dataset generators for concept drift experiments.
-Provides implementations for SEA, Sine, ConceptDriftStream, and FriedmanDrift generators
+Provides implementations for SEA, Sine, FriedmanDrift, Elec2, and ConceptDriftStream generators
 using River's dataset API for streaming concept drift scenarios.
 """
 
@@ -412,12 +412,30 @@ def create_dataset(
     """
     Factory function to create dataset generators.
     
+    Supports both traditional detailed configuration and scenario-based intelligent configuration.
+    For simplified usage, consider using create_experiment_stream() from smart_config module.
+    
     Args:
         dataset_type: Type of dataset ('sea', 'sine', 'concept_drift', 'friedman', 'elec2')
         config: Configuration dictionary for the dataset
         
     Returns:
         Generator yielding (features, target, is_drift_point) tuples
+        
+    Examples:
+        # Traditional detailed configuration
+        >>> stream = create_dataset('sea', {
+        ...     'drift_positions': [1000, 2500],
+        ...     'noise_level': 0.02,
+        ...     'n_samples': 5000
+        ... })
+        
+        # For simplified scenario-based configuration, use:
+        >>> from .smart_config import create_experiment_stream
+        >>> stream = create_experiment_stream(
+        ...     scenario='abrupt_drift',
+        ...     difficulty='hard'
+        ... )
     """
     config = config or {}
     
@@ -435,3 +453,126 @@ def create_dataset(
         raise ValueError(f"Unknown dataset type: {dataset_type}")
         
     return generator.generate()
+
+
+def get_available_datasets() -> List[str]:
+    """
+    Get list of available dataset types.
+    
+    Returns:
+        List of available dataset names
+    """
+    return ['sea', 'sine', 'concept_drift', 'friedman', 'elec2']
+
+
+def get_dataset_info(dataset_type: str = None) -> Dict[str, Any]:
+    """
+    Get information about available datasets.
+    
+    Args:
+        dataset_type: Specific dataset to get info about, or None for all
+        
+    Returns:
+        Dictionary containing dataset information
+    """
+    dataset_descriptions = {
+        'sea': {
+            'name': 'SEA Generator',
+            'description': 'SEA (Streaming Ensemble Algorithm) concept drift generator with abrupt changes',
+            'drift_type': 'abrupt',
+            'features': 'Single feature with 4 concept functions',
+            'parameters': ['drift_positions', 'noise_level', 'n_samples', 'seed'],
+            'best_for': 'Testing abrupt concept drift detection',
+            'sample_config': {
+                'drift_positions': [1000, 2500],
+                'noise_level': 0.02,
+                'n_samples': 5000,
+                'seed': 42
+            }
+        },
+        'sine': {
+            'name': 'Sine Wave Generator',
+            'description': 'Sine wave generator with concept drift using River\'s ConceptDriftStream',
+            'drift_type': 'gradual/abrupt',
+            'features': 'Multi-dimensional sine wave features',
+            'parameters': ['drift_positions', 'transition_width', 'noise_level', 'n_samples', 'seed'],
+            'best_for': 'Testing gradual and abrupt concept drift with complex features',
+            'sample_config': {
+                'drift_positions': [1500, 3000],
+                'transition_width': 1,
+                'noise_level': 0.02,
+                'n_samples': 5000,
+                'seed': 42
+            }
+        },
+        'friedman': {
+            'name': 'Friedman Drift Generator',
+            'description': 'Friedman drift generator with various drift types (abrupt, gradual, incremental)',
+            'drift_type': 'configurable',
+            'features': 'Multi-dimensional Friedman regression features',
+            'parameters': ['drift_type', 'drift_positions', 'transition_width', 'noise_level', 'n_samples', 'n_features', 'seed'],
+            'best_for': 'Testing different types of concept drift with regression tasks',
+            'sample_config': {
+                'drift_type': 'gradual',
+                'drift_positions': [2500],
+                'transition_width': 200,
+                'noise_level': 0.02,
+                'n_samples': 5000,
+                'n_features': 10,
+                'seed': 42
+            }
+        },
+        'concept_drift': {
+            'name': 'Concept Drift Stream',
+            'description': 'Flexible concept drift stream generator that composes different base streams',
+            'drift_type': 'configurable',
+            'features': 'Multi-stream composition with different feature types',
+            'parameters': ['stream_configs', 'drift_positions', 'transition_width', 'noise_level', 'seed'],
+            'best_for': 'Complex scenarios with multiple concept changes and stream types',
+            'sample_config': {
+                'stream_configs': [
+                    {'type': 'sine', 'n_samples': 1000, 'function': 0},
+                    {'type': 'friedman', 'n_samples': 1000}
+                ],
+                'drift_positions': [1000],
+                'transition_width': 100,
+                'noise_level': 0.02,
+                'seed': 42
+            }
+        },
+        'elec2': {
+            'name': 'Electricity Market (Elec2)',
+            'description': 'Real-world electricity market dataset with natural concept drift patterns',
+            'drift_type': 'real-world',
+            'features': 'NSW electricity market features (price, demand, etc.)',
+            'parameters': ['n_samples', 'drift_positions', 'start_position', 'sample_fraction', 'seed'],
+            'best_for': 'Testing on real-world data with natural concept drift',
+            'sample_config': {
+                'sample_fraction': 1.0,
+                'start_position': 0,
+                'seed': 42
+            },
+            'note': 'Uses real-world data with 45,312 samples. Drift positions auto-detected if not specified.'
+        }
+    }
+    
+    if dataset_type:
+        if dataset_type in dataset_descriptions:
+            return dataset_descriptions[dataset_type]
+        else:
+            raise ValueError(f"Unknown dataset type: {dataset_type}")
+    
+    return dataset_descriptions
+
+
+# Export unified interface components for easy importing
+__all__ = [
+    'create_dataset',
+    'get_available_datasets', 
+    'get_dataset_info',
+    'SEAGenerator',
+    'SineGenerator', 
+    'ConceptDriftStreamGenerator',
+    'FriedmanDriftGenerator',
+    'Elec2Generator'
+]
